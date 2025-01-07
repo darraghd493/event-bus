@@ -4,7 +4,22 @@ A simple developer-friendly event bus implementation in Java.
 
 ## Installation
 
-This project is available via. Jitpack. View more information [here](https://jitpack.io/#Fentanyl-Client/event-bus).
+### Gradle
+
+```kotlin
+repositories {
+    maven {
+        name = "darraghsRepositoryReleases"
+        url = uri("https://repo.darragh.website/releases")
+    }
+}
+
+dependencies {
+    implementation("me.darragh:event-bus:{version}")
+}
+```
+
+_This project is also available via. Jitpack. View more information [here](https://jitpack.io/#Fentanyl-Client/event-bus)._
 
 ## Usage
 

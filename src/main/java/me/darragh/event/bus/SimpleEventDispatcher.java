@@ -1,5 +1,6 @@
 package me.darragh.event.bus;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import me.darragh.event.Event;
 
@@ -90,8 +91,8 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean testFor(T event) {
-        return !this.listeners.getOrDefault(event.getClass(), (List<EventListener<T>>) EMPTY_LIST).isEmpty();
+    public <U extends T> boolean testFor(Class<U> eventClass) {
+        return !this.listeners.getOrDefault(eventClass, (List<EventListener<T>>) EMPTY_LIST).isEmpty();
     }
 
     /**
@@ -167,7 +168,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         }
 
         if (!Modifier.isFinal(modifiers) && field) {
-            throw new RuntimeException("Member %s is final: %x".formatted(name, modifiers));
+            throw new RuntimeException("Member %s is not final: %x".formatted(name, modifiers));
         }
     }
 
@@ -211,6 +212,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @author darraghd493
      * @since 1.0.0
      */
+    @EqualsAndHashCode
     public static class MethodEventListener<T extends Event> implements EventListener<T> {
         private final Listener annotation;
         private final Object instance;

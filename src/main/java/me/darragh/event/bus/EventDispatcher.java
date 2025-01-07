@@ -57,10 +57,12 @@ public interface EventDispatcher<T extends Event> {
     /**
      * Tests for any specified event listeners.
      *
-     * @param event The event to test for.
+     * @param <U> The event type to test for.
+     *
+     * @param eventClass The event class to test for.
      * @return Whether the event has any listeners.
      *
      * @since 1.0.0
      */
-    boolean testFor(T event);
+    <U extends T> boolean testFor(Class<U> eventClass);
 }

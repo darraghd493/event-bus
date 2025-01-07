@@ -22,12 +22,12 @@ public abstract class SimpleEventListener<T extends Event> implements EventListe
      *
      * @param <U> The type of event.
      *
-     * @param clazz The class of the event.
+     * @param eventClass The class of the event.
      * @param listener The listener to handle the event.
      * @return The created event listener.
      */
-    public static <U extends Event> SimpleEventListener<U> create(Class<U> clazz, SimpleEventConsumer<U> listener) {
-        return new SimpleEventListener<>(clazz) {
+    public static <U extends Event> SimpleEventListener<U> create(Class<U> eventClass, SimpleEventConsumer<U> listener) {
+        return new SimpleEventListener<>(eventClass) {
             @Override
             public void invoke(U event) {
                 listener.invoke(event);

@@ -25,8 +25,18 @@ dependencies {
 }
 
 // Tasks:
-tasks.withType(JavaCompile::class.java) {
+tasks.compileJava {
     options.encoding = "UTF-8"
+}
+
+tasks.register<Jar>("sourcesJar") {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
+tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    from(tasks.javadoc)
 }
 
 // Publishing:
@@ -37,9 +47,58 @@ publishing {
             groupId = "me.darragh"
             artifactId = "event-bus"
             version = project.version.toString()
+
+            pom {
+                name.set("Event Bus")
+                description.set("A simple event bus for Java")
+                url.set("https://github.com/Fentanyl-Client/event-bus")
+                properties.set(mapOf(
+                    "java.version" to "17",
+                    "project.build.sourceEncoding" to "UTF-8",
+                    "project.reporting.outputEncoding" to "UTF-8"
+                ))
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://github.com/Fentanyl-Client/event-bus/blob/main/LICENSE")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("darraghd493")
+                        name.set("Darragh")
+                    }
+                }
+                organization {
+                    name.set("Fentanyl")
+                    url.set("https://fentanyl.dev")
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Fentanyl-Client/event-bus.git")
+                    developerConnection.set("scm:git:ssh://github.com/Fentanyl-Client/event-bus.git")
+                    url.set("https://github.com/Fentanyl-Client/event-bus")
+                }
+            }
+
+            java {
+                withSourcesJar()
+                withJavadocJar()
+            }
         }
     }
+
     repositories {
         mavenLocal()
+        maven {
+            name = "darraghsRepo"
+            url = uri("https://repo.darragh.website/snapshots")
+            credentials {
+                username = System.getenv("REPO_TOKEN")
+                password = System.getenv("REPO_SECRET")
+            }
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+        }
     }
 }
