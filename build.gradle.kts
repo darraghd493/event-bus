@@ -51,7 +51,7 @@ publishing {
             pom {
                 name.set("Event Bus")
                 description.set("A simple event bus for Java")
-                url.set("https://github.com/Fentanyl-Client/event-bus")
+                url.set("https://github.com/darraghd493/event-bus")
                 properties.set(mapOf(
                     "java.version" to "17",
                     "project.build.sourceEncoding" to "UTF-8",
@@ -60,7 +60,7 @@ publishing {
                 licenses {
                     license {
                         name.set("MIT License")
-                        url.set("https://github.com/Fentanyl-Client/event-bus/blob/main/LICENSE")
+                        url.set("https://github.com/darraghd493/event-bus/blob/main/LICENSE")
                     }
                 }
                 developers {
@@ -74,9 +74,9 @@ publishing {
                     url.set("https://fentanyl.dev")
                 }
                 scm {
-                    connection.set("scm:git:git://github.com/Fentanyl-Client/event-bus.git")
-                    developerConnection.set("scm:git:ssh://github.com/Fentanyl-Client/event-bus.git")
-                    url.set("https://github.com/Fentanyl-Client/event-bus")
+                    connection.set("scm:git:git://github.com/darraghd493/event-bus.git")
+                    developerConnection.set("scm:git:ssh://github.com/darraghd493/event-bus.git")
+                    url.set("https://github.com/darraghd493/event-bus")
                 }
             }
 
