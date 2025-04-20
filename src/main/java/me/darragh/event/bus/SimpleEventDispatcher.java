@@ -36,7 +36,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         }
 
         for (var field : instance.getClass().getDeclaredFields()) {
-            registerFieldListener(instance, field);
+            this.registerFieldListener(instance, field);
         }
     }
 
@@ -76,7 +76,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         }
 
         if (!this.sortedListeners.getOrDefault(event.getClass(), false)) {
-            sortListeners(event.getClass());
+            this.sortListeners(event.getClass());
         }
 
         for (EventListener<T> listener : eventListeners) {
@@ -113,6 +113,8 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         this.listeners
                 .computeIfAbsent(listener.getEventType(), arr -> new ArrayList<>())
                 .add(listener);
+
+        this.sortedListeners.put(listener.getEventType(), false);
     }
 
     /**
@@ -143,6 +145,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             } else {
                 throw new RuntimeException("Listener field %s is null.".formatted(field.getName()));
             }
+            this.sortedListeners.put(listener.getEventType(), false);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Unable to access field: " + field.getName(), e);
         }
