@@ -91,7 +91,7 @@ publishing {
         mavenLocal()
         maven {
             name = "darraghsRepo"
-            url = uri("https://repo.darragh.website/snapshots")
+            url = uri("https://repo.darragh.website/releases")
             credentials {
                 username = System.getenv("REPO_TOKEN")
                 password = System.getenv("REPO_SECRET")
