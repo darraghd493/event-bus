@@ -7,6 +7,7 @@ import me.darragh.event.Event;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A simple event dispatcher implementation.
@@ -44,7 +45,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     public void register(EventListener<T> listener) {
         List<EventListener<T>> eventListeners = this.listeners.computeIfAbsent(
                 listener.getEventType(),
-                arr -> new ArrayList<>()
+                arr -> new CopyOnWriteArrayList<>()
         );
         eventListeners.add(listener);
         this.sortedListeners.put(listener.getEventType(), false);
@@ -111,7 +112,10 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
         EventListener<T> listener = new MethodEventListener<>(annotation, instance, method);
         this.listeners
-                .computeIfAbsent(listener.getEventType(), arr -> new ArrayList<>())
+                .computeIfAbsent(
+                        listener.getEventType(),
+                        arr -> new CopyOnWriteArrayList<>()
+                )
                 .add(listener);
 
         this.sortedListeners.put(listener.getEventType(), false);
@@ -140,7 +144,10 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             EventListener<T> listener = (EventListener<T>) field.get(instance);
             if (listener != null) {
                 this.listeners
-                        .computeIfAbsent(listener.getEventType(), arr -> new ArrayList<>()) // <- at .getEventType()
+                        .computeIfAbsent(
+                                listener.getEventType(),
+                                arr -> new CopyOnWriteArrayList<>()
+                        ) // <- at .getEventType()
                         .add(listener);
             } else {
                 throw new RuntimeException("Listener field %s is null.".formatted(field.getName()));
