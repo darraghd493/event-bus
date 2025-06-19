@@ -70,8 +70,8 @@ publishing {
                     }
                 }
                 organization {
-                    name.set("Fentanyl")
-                    url.set("https://fentanyl.dev")
+                    name.set("darragh.website")
+                    url.set("https://darragh.website")
                 }
                 scm {
                     connection.set("scm:git:git://github.com/darraghd493/event-bus.git")
