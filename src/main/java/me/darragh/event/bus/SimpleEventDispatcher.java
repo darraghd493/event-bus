@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import me.darragh.event.Event;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @since 1.0.0
  */
 public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T> {
-    private static final List<?> EMPTY_LIST = List.of();
+    private static final List<?> EMPTY_LIST = new ArrayList<>();
 
     private final Map<Type, List<EventListener<T>>> listeners;
     private final Map<Type, Boolean> sortedListeners;
@@ -32,11 +33,11 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     public void register(Object instance) {
         Objects.requireNonNull(instance, "Instance cannot be null.");
 
-        for (var method : instance.getClass().getDeclaredMethods()) {
+        for (Method method : instance.getClass().getDeclaredMethods()) {
             this.registerMethodListener(instance, method);
         }
 
-        for (var field : instance.getClass().getDeclaredFields()) {
+        for (Field field : instance.getClass().getDeclaredFields()) {
             this.registerFieldListener(instance, field);
         }
     }
@@ -53,7 +54,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void unregister(Object instance) {
-        for (var method : instance.getClass().getDeclaredMethods()) {
+        for (Method method : instance.getClass().getDeclaredMethods()) {
             Listener annotation = method.getAnnotation(Listener.class);
             if (annotation == null) {
                 continue;
@@ -103,7 +104,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @param method The method to register.
      */
     private void registerMethodListener(Object instance, Method method) {
-        var annotation = method.getAnnotation(Listener.class);
+        Listener annotation = method.getAnnotation(Listener.class);
         if (annotation == null) {
             return;
         }
@@ -133,7 +134,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             return;
         }
 
-        var annotation = field.getAnnotation(Listener.class);
+        Listener annotation = field.getAnnotation(Listener.class);
         if (annotation == null) {
             return;
         }
@@ -150,7 +151,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
                         ) // <- at .getEventType()
                         .add(listener);
             } else {
-                throw new RuntimeException("Listener field %s is null.".formatted(field.getName()));
+                throw new RuntimeException(String.format("Listener field %s is null.", field.getName()));
             }
             this.sortedListeners.put(listener.getEventType(), false);
         } catch (IllegalAccessException e) {
@@ -170,15 +171,15 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      */
     private void validateModifiers(String name, int modifiers, boolean field)  {
         if (!Modifier.isPublic(modifiers)) {
-            throw new RuntimeException("Member %s is not public: %x".formatted(name, modifiers));
+            throw new RuntimeException(String.format("Member %s is not public: %x", name, modifiers));
         }
 
         if (Modifier.isStatic(modifiers)) {
-            throw new RuntimeException("Member %s is static: %x".formatted(name, modifiers));
+            throw new RuntimeException(String.format("Member %s is static: %x", name, modifiers));
         }
 
         if (!Modifier.isFinal(modifiers) && field) {
-            throw new RuntimeException("Member %s is not final: %x".formatted(name, modifiers));
+            throw new RuntimeException(String.format("Member %s is not final: %x", name, modifiers));
         }
     }
 

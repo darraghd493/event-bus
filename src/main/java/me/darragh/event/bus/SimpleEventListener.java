@@ -27,7 +27,7 @@ public abstract class SimpleEventListener<T extends Event> implements EventListe
      * @return The created event listener.
      */
     public static <U extends Event> SimpleEventListener<U> create(Class<U> eventClass, SimpleEventConsumer<U> listener) {
-        return new SimpleEventListener<>(eventClass) {
+        return new SimpleEventListener<U>(eventClass) {
             @Override
             public void invoke(U event) {
                 listener.invoke(event);

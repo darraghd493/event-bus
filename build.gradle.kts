@@ -45,7 +45,7 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             groupId = "me.darragh"
-            artifactId = "event-bus"
+            artifactId = "event-bus-java8"
             version = project.version.toString()
 
             pom {
@@ -53,7 +53,7 @@ publishing {
                 description.set("A simple event bus for Java")
                 url.set("https://github.com/darraghd493/event-bus")
                 properties.set(mapOf(
-                    "java.version" to "17",
+                    "java.version" to "9",
                     "project.build.sourceEncoding" to "UTF-8",
                     "project.reporting.outputEncoding" to "UTF-8"
                 ))
@@ -70,8 +70,8 @@ publishing {
                     }
                 }
                 organization {
-                    name.set("Fentanyl")
-                    url.set("https://fentanyl.dev")
+                    name.set("darragh.website")
+                    url.set("https://darragh.website")
                 }
                 scm {
                     connection.set("scm:git:git://github.com/darraghd493/event-bus.git")
