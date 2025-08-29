@@ -4,6 +4,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import me.darragh.event.Event;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,7 +61,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
                 continue;
             }
 
-            EventListener<T> listener = new MethodEventListener<>(annotation, instance, method);
+            MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
             this.removeListener(listener);
         }
     }
@@ -102,7 +104,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @param instance The instance of the class.
      * @param method The method to register.
      */
-    private void registerMethodListener(Object instance, Method method) {
+    protected void registerMethodListener(Object instance, Method method) {
         var annotation = method.getAnnotation(Listener.class);
         if (annotation == null) {
             return;
@@ -110,7 +112,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
         this.validateModifiers(method.getName(), method.getModifiers(), false);
 
-        EventListener<T> listener = new MethodEventListener<>(annotation, instance, method);
+        MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
         this.listeners
                 .computeIfAbsent(
                         listener.getEventType(),
@@ -122,13 +124,35 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     /**
+     * Creates a method listener from a method, using a {@link MethodHandle} for invocation.
+     *
+     * @param annotation The listener annotation.
+     * @param instance The instance of the class.
+     * @param method The method to create the listener from.
+     * @return The created method listener.
+     *
+     * @since 1.0.3
+     */
+    protected MethodEventListener<T> createMethodListener(Listener annotation, Object instance, Method method) {
+        try {
+            if (!method.canAccess(instance)) method.setAccessible(true);
+            MethodHandle handle = MethodHandles.lookup().unreflect(method).bindTo(instance);
+            return new MethodEventListener<>(annotation, instance, method, handle);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Registers a field as a listener.
      *
      * @param instance The instance of the class.
      * @param field The field to register.
+     *
+     * @since 1.0.0
      */
     @SuppressWarnings("unchecked")
-    private void registerFieldListener(Object instance, Field field) {
+    protected void registerFieldListener(Object instance, Field field) {
         if (!EventListener.class.isAssignableFrom(field.getType())) {
             return;
         }
@@ -168,7 +192,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      *
      * @since 1.0.0
      */
-    private void validateModifiers(String name, int modifiers, boolean field)  {
+    protected void validateModifiers(String name, int modifiers, boolean field)  {
         if (!Modifier.isPublic(modifiers)) {
             throw new RuntimeException("Member %s is not public: %x".formatted(name, modifiers));
         }
@@ -191,7 +215,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      *
      * @see EventPriority
      */
-    private void sortListeners(Type eventType) {
+    protected void sortListeners(Type eventType) {
         List<EventListener<T>> eventListeners = this.listeners.get(eventType);
         if (eventListeners == null) {
             return;
@@ -208,7 +232,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      *
      * @since 1.0.0
      */
-    private void removeListener(EventListener<T> listener) {
+    protected void removeListener(EventListener<T> listener) {
         this.listeners.computeIfPresent(listener.getEventType(), (type, list) -> {
             list.remove(listener);
             return list.isEmpty() ? null : list;
@@ -223,10 +247,10 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @since 1.0.0
      */
     @EqualsAndHashCode
-    public static class MethodEventListener<T extends Event> implements EventListener<T> {
+    protected static class MethodEventListener<T extends Event> implements EventListener<T> {
         private final Listener annotation;
         private final Object instance;
-        private final Method method;
+        private final MethodHandle methodHandle;
 
         @Getter
         private final Class<T> eventType;
@@ -239,18 +263,18 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
          *
          * @since 1.0.0
          */
-        public MethodEventListener(Listener annotation, Object instance, Method method) {
+        public MethodEventListener(Listener annotation, Object instance, Method method, MethodHandle methodHandle) {
             this.annotation = annotation;
             this.instance = instance;
-            this.method = method;
+            this.methodHandle = methodHandle;
             this.eventType = (Class<T>) method.getGenericParameterTypes()[0];
         }
 
         @Override
         public void invoke(Event event) {
             try {
-                this.method.invoke(instance, event);
-            } catch (IllegalAccessException | InvocationTargetException e) {
+                this.methodHandle.invokeExact(event);
+            } catch (Throwable e) {
                 throw new RuntimeException(e);
             }
         }
