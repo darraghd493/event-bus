@@ -32,8 +32,6 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void register(Object instance) {
-        Objects.requireNonNull(instance, "Instance cannot be null.");
-
         for (var method : instance.getClass().getDeclaredMethods()) {
             this.registerMethodListener(instance, method);
         }
