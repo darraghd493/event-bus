@@ -62,6 +62,20 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
             this.removeListener(listener);
         }
+
+        for (var field : instance.getClass().getDeclaredFields()) { // TODO: Test
+            if (!EventListener.class.isAssignableFrom(field.getType())) continue;
+            Listener annotation = field.getAnnotation(Listener.class);
+            if (annotation == null) continue;
+
+            try {
+                if (!field.canAccess(instance)) field.setAccessible(true);
+                EventListener<?> listener = (EventListener<?>) field.get(instance);
+                if (listener != null) this.removeListener((EventListener<T>) listener);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
@@ -244,12 +258,16 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @author darraghd493
      * @since 1.0.0
      */
-    @EqualsAndHashCode
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     protected static class MethodEventListener<T extends Event> implements EventListener<T> {
         private final Listener annotation;
+
+        @EqualsAndHashCode.Include
         private final Object instance;
+
         private final MethodHandle methodHandle;
 
+        @EqualsAndHashCode.Include
         @Getter
         private final Class<T> eventType;
 
