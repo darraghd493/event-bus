@@ -271,7 +271,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         @Override
         public void invoke(Event event) {
             try {
-                this.methodHandle.invokeExact(event);
+                this.methodHandle.invoke(event);
             } catch (Throwable e) {
                 throw new RuntimeException(e);
             }

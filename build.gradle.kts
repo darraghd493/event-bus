@@ -13,7 +13,7 @@ repositories {
     mavenCentral()
 }
 
-val annotationProc: Configuration by configurations.creating {
+val annotationImplementation: Configuration by configurations.creating {
     configurations.compileOnly.get().extendsFrom(this)
     configurations.annotationProcessor.get().extendsFrom(this)
     configurations.testCompileOnly.get().extendsFrom(this)
@@ -21,7 +21,7 @@ val annotationProc: Configuration by configurations.creating {
 }
 
 dependencies {
-    annotationProc("org.projectlombok:lombok:1.18.34")
+    annotationImplementation("org.projectlombok:lombok:1.18.34")
 }
 
 // Tasks:
