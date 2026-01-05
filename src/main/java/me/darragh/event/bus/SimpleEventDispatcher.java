@@ -31,7 +31,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void register(Object instance) {
+    public void registerObject(Object instance) {
         for (var method : instance.getClass().getDeclaredMethods()) {
             this.registerMethodListener(instance, method);
         }
@@ -42,7 +42,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void register(EventListener<T> listener) {
+    public void registerListener(EventListener<T> listener) {
         List<EventListener<T>> eventListeners = this.listeners.computeIfAbsent(
                 listener.getEventType(),
                 arr -> new CopyOnWriteArrayList<>()
@@ -52,7 +52,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void unregister(Object instance) {
+    public void unregisterObject(Object instance) {
         for (var method : instance.getClass().getDeclaredMethods()) {
             Listener annotation = method.getAnnotation(Listener.class);
             if (annotation == null) {
@@ -79,7 +79,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void unregister(EventListener<T> listener) {
+    public void unregisterListener(EventListener<T> listener) {
         this.removeListener(listener);
     }
 

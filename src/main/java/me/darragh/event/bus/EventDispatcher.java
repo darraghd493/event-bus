@@ -16,7 +16,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void register(Object instance);
+    void registerObject(Object instance);
 
     /**
      * Registers a singular event listener to the event dispatcher.
@@ -25,7 +25,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void register(EventListener<T> listener);
+    void registerListener(EventListener<T> listener);
 
     /**
      * Unregister a class from the event dispatcher.
@@ -34,7 +34,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void unregister(Object instance);
+    void unregisterObject(Object instance);
 
     /**
      * Unregister a singular event listener from the event dispatcher.
@@ -43,7 +43,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void unregister(EventListener<T> listener);
+    void unregisterListener(EventListener<T> listener);
 
     /**
      * Invoke the event.
