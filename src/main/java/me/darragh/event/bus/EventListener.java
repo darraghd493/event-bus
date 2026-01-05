@@ -8,6 +8,7 @@ import java.lang.reflect.ParameterizedType;
  * Interface class for listening to dispatched events.
  * <p>
  * This is used as a common for handling events. The standard is methods annotated with {@link Listener}.
+ * This <b>should not</b> be used as a lambda - use {@link SimpleEventListener}.
  *
  * @param <T> The type of event.
  *
