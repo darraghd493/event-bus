@@ -25,7 +25,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void registerListener(EventListener<T> listener);
+    void registerListener(EventListener<? extends T> listener);
 
     /**
      * Unregister a class from the event dispatcher.
@@ -43,7 +43,7 @@ public interface EventDispatcher<T extends Event> {
      *
      * @since 1.0.0
      */
-    void unregisterListener(EventListener<T> listener);
+    void unregisterListener(EventListener<? extends T> listener);
 
     /**
      * Invoke the event.

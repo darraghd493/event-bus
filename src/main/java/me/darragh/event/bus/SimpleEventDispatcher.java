@@ -22,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T> {
     private static final List<?> EMPTY_LIST = List.of();
 
-    private final Map<Type, List<EventListener<T>>> listeners;
+    private final Map<Type, List<EventListener<? extends T>>> listeners;
     private final Map<Type, Boolean> sortedListeners;
 
     public SimpleEventDispatcher() {
@@ -42,8 +42,8 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void registerListener(EventListener<T> listener) {
-        List<EventListener<T>> eventListeners = this.listeners.computeIfAbsent(
+    public void registerListener(EventListener<? extends T> listener) {
+        List<EventListener<? extends T>> eventListeners = this.listeners.computeIfAbsent(
                 listener.getEventType(),
                 arr -> new CopyOnWriteArrayList<>()
         );
@@ -70,8 +70,8 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
             try {
                 if (!field.canAccess(instance)) field.setAccessible(true);
-                EventListener<?> listener = (EventListener<?>) field.get(instance);
-                if (listener != null) this.removeListener((EventListener<T>) listener);
+                @SuppressWarnings("unchecked") EventListener<? extends T> listener = (EventListener<? extends T>) field.get(instance);
+                if (listener != null) this.removeListener(listener);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -79,13 +79,13 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     }
 
     @Override
-    public void unregisterListener(EventListener<T> listener) {
+    public void unregisterListener(EventListener<? extends T> listener) {
         this.removeListener(listener);
     }
 
     @Override
     public void invoke(T event) {
-        List<EventListener<T>> eventListeners = this.listeners.get(event.getClass());
+        List<EventListener<? extends T>> eventListeners = this.listeners.get(event.getClass());
         if (eventListeners == null || eventListeners.isEmpty()) {
             return;
         }
@@ -94,11 +94,13 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             this.sortListeners(event.getClass());
         }
 
-        for (EventListener<T> listener : eventListeners) {
+        for (@SuppressWarnings("rawtypes") EventListener listener : eventListeners) {
             try {
+                //noinspection unchecked
                 listener.invoke(event);
             } catch (Exception e) {
                 System.err.printf("Error invoking listener: %s%n", e); // TODO: Logging
+                //noinspection CallToPrintStackTrace
                 e.printStackTrace(); // TODO: Remove
             }
         }
@@ -107,7 +109,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
     @SuppressWarnings("unchecked")
     @Override
     public <U extends T> boolean testFor(Class<U> eventClass) {
-        return !this.listeners.getOrDefault(eventClass, (List<EventListener<T>>) EMPTY_LIST).isEmpty();
+        return !this.listeners.getOrDefault(eventClass, (List<EventListener<? extends T>>) EMPTY_LIST).isEmpty();
     }
 
     /**
@@ -228,7 +230,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @see EventPriority
      */
     protected void sortListeners(Type eventType) {
-        List<EventListener<T>> eventListeners = this.listeners.get(eventType);
+        List<EventListener<? extends T>> eventListeners = this.listeners.get(eventType);
         if (eventListeners == null) {
             return;
         }
@@ -244,7 +246,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      *
      * @since 1.0.0
      */
-    protected void removeListener(EventListener<T> listener) {
+    protected void removeListener(EventListener<? extends T> listener) {
         this.listeners.computeIfPresent(listener.getEventType(), (type, list) -> {
             list.remove(listener);
             return list.isEmpty() ? null : list;
@@ -258,6 +260,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @author darraghd493
      * @since 1.0.0
      */
+    @SuppressWarnings("ClassCanBeRecord")
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     protected static class MethodEventListener<T extends Event> implements EventListener<T> {
         private final Listener annotation;
@@ -283,6 +286,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             this.annotation = annotation;
             this.instance = instance;
             this.methodHandle = methodHandle;
+            //noinspection unchecked
             this.eventType = (Class<T>) method.getGenericParameterTypes()[0];
         }
 
