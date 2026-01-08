@@ -49,7 +49,7 @@ publishing {
             version = project.version.toString()
 
             pom {
-                name.set("Event Bus")
+                name.set("event-bus")
                 description.set("A simple event bus for Java")
                 url.set("https://github.com/darraghd493/event-bus")
                 properties.set(mapOf(
