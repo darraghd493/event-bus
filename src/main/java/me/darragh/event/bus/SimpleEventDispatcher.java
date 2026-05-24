@@ -1,15 +1,15 @@
 package me.darragh.event.bus;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import me.darragh.event.Event;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A simple event dispatcher implementation.
@@ -20,15 +20,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @since 1.0.0
  */
 public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T> {
-    private static final List<?> EMPTY_LIST = List.of();
-
-    private final Map<Type, List<EventListener<? extends T>>> listeners;
-    private final Map<Type, Boolean> sortedListeners;
-
-    public SimpleEventDispatcher() {
-        this.listeners = new ConcurrentHashMap<>();
-        this.sortedListeners = new ConcurrentHashMap<>();
-    }
+    private final Map<Type, EventListener<T>[]> listeners = new ConcurrentHashMap<>();
+    private final Map<Type, Boolean> sortedListeners = new ConcurrentHashMap<>();
 
     @Override
     public void registerObject(Object instance) {
@@ -43,12 +36,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void registerListener(EventListener<? extends T> listener) {
-        List<EventListener<? extends T>> eventListeners = this.listeners.computeIfAbsent(
-                listener.getEventType(),
-                arr -> new CopyOnWriteArrayList<>()
-        );
-        eventListeners.add(listener);
-        this.sortedListeners.put(listener.getEventType(), false);
+        this.addListenerToArray(listener);
     }
 
     @Override
@@ -85,18 +73,16 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void invoke(T event) {
-        List<EventListener<? extends T>> eventListeners = this.listeners.get(event.getClass());
-        if (eventListeners == null || eventListeners.isEmpty()) {
-            return;
-        }
+        EventListener<T>[] eventListeners = this.listeners.get(event.getClass());
+        if (eventListeners == null || eventListeners.length == 0) return;
 
         if (!this.sortedListeners.getOrDefault(event.getClass(), false)) {
             this.sortListeners(event.getClass());
+            eventListeners = this.listeners.get(event.getClass());
         }
 
-        for (@SuppressWarnings("rawtypes") EventListener listener : eventListeners) {
+        for (EventListener<T> listener : eventListeners) {
             try {
-                //noinspection unchecked
                 listener.invoke(event);
             } catch (Exception e) {
                 System.err.printf("Error invoking listener: %s%n", e); // TODO: Logging
@@ -106,10 +92,10 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <U extends T> boolean testFor(Class<U> eventClass) {
-        return !this.listeners.getOrDefault(eventClass, (List<EventListener<? extends T>>) EMPTY_LIST).isEmpty();
+        EventListener<T>[] eventListeners = this.listeners.get(eventClass);
+        return eventListeners != null && eventListeners.length > 0;
     }
 
     /**
@@ -127,14 +113,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         this.validateModifiers(method.getName(), method.getModifiers(), false);
 
         MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
-        this.listeners
-                .computeIfAbsent(
-                        listener.getEventType(),
-                        arr -> new CopyOnWriteArrayList<>()
-                )
-                .add(listener);
-
-        this.sortedListeners.put(listener.getEventType(), false);
+        this.addListenerToArray(listener);
     }
 
     /**
@@ -181,16 +160,10 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         try {
             EventListener<T> listener = (EventListener<T>) field.get(instance);
             if (listener != null) {
-                this.listeners
-                        .computeIfAbsent(
-                                listener.getEventType(),
-                                arr -> new CopyOnWriteArrayList<>()
-                        ) // <- at .getEventType()
-                        .add(listener);
+                this.addListenerToArray(listener);
             } else {
                 throw new RuntimeException("Listener field %s is null.".formatted(field.getName()));
             }
-            this.sortedListeners.put(listener.getEventType(), false);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Unable to access field: " + field.getName(), e);
         }
@@ -230,12 +203,12 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      * @see EventPriority
      */
     protected void sortListeners(Type eventType) {
-        List<EventListener<? extends T>> eventListeners = this.listeners.get(eventType);
-        if (eventListeners == null) {
+        EventListener<T>[] eventListeners = this.listeners.get(eventType);
+        if (eventListeners == null || eventListeners.length == 0) {
             return;
         }
 
-        eventListeners.sort(Comparator.comparingInt(eventListener -> eventListener.getPriority().value()));
+        Arrays.sort(eventListeners, Comparator.comparingInt(eventListener -> eventListener.getPriority().value()));
         this.sortedListeners.put(eventType, true);
     }
 
@@ -246,13 +219,45 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
      *
      * @since 1.0.0
      */
+    @SuppressWarnings("unchecked")
     protected void removeListener(EventListener<? extends T> listener) {
-        this.listeners.computeIfPresent(listener.getEventType(), (type, list) -> {
-            list.remove(listener);
-            return list.isEmpty() ? null : list;
+        this.listeners.computeIfPresent(listener.getEventType(), (type, arr) -> {
+            int index = -1;
+            for (int i = 0; i < arr.length; i++) {
+                if (arr[i].equals(listener)) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1) return arr;
+            if (arr.length == 1) return null;
+
+            EventListener<T>[] newArr = new EventListener[arr.length - 1];
+            System.arraycopy(arr, 0, newArr, 0, index);
+            System.arraycopy(arr, index + 1, newArr, index, arr.length - index - 1);
+            return newArr;
         });
         this.sortedListeners.remove(listener.getEventType());
     }
+
+    //region Helpers
+    @SuppressWarnings("unchecked")
+    private void addListenerToArray(EventListener<? extends T> listener) {
+        this.listeners.compute(listener.getEventType(), (type, arr) -> {
+            EventListener<T>[] newArr;
+            if (arr == null) {
+                newArr = new EventListener[1];
+                newArr[0] = (EventListener<T>) listener;
+            } else {
+                newArr = Arrays.copyOf(arr, arr.length + 1);
+                newArr[arr.length] = (EventListener<T>) listener;
+            }
+            return newArr;
+        });
+        this.sortedListeners.put(listener.getEventType(), false);
+    }
+    //endregion
 
     /**
      * Represents a method as an event listener.
@@ -271,7 +276,6 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         private final MethodHandle methodHandle;
 
         @EqualsAndHashCode.Include
-        @Getter
         private final Class<T> eventType;
 
         /**
@@ -287,7 +291,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             this.instance = instance;
             this.methodHandle = methodHandle;
             //noinspection unchecked
-            this.eventType = (Class<T>) method.getGenericParameterTypes()[0];
+            this.eventType = (Class<T>) method.getParameterTypes()[0];
         }
 
         @Override
@@ -302,6 +306,11 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         @Override
         public EventPriority getPriority() {
             return this.annotation.priority();
+        }
+
+        @Override
+        public Class<T> getEventType() {
+            return this.eventType;
         }
     }
 }
