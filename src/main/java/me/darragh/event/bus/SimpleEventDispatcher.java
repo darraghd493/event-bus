@@ -63,7 +63,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             this.removeListener(listener);
         }
 
-        for (var field : instance.getClass().getDeclaredFields()) { // TODO: Test
+        for (var field : instance.getClass().getDeclaredFields()) {
             if (!EventListener.class.isAssignableFrom(field.getType())) continue;
             Listener annotation = field.getAnnotation(Listener.class);
             if (annotation == null) continue;
@@ -235,7 +235,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             return;
         }
 
-        eventListeners.sort(Comparator.comparing(eventListener -> eventListener.getPriority().value()));
+        eventListeners.sort(Comparator.comparingInt(eventListener -> eventListener.getPriority().value()));
         this.sortedListeners.put(eventType, true);
     }
 

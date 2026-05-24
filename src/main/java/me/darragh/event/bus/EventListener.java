@@ -33,7 +33,7 @@ public interface EventListener<T extends Event> {
      * @since 1.0.0
      */
     default EventPriority getPriority() {
-        return EventPriority.NORMAL;
+        return EventPriority.DEFAULT;
     }
 
     /**

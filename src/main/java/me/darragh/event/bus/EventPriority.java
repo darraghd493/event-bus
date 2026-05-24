@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @RequiredArgsConstructor
 public enum EventPriority {
-    LOWEST((byte) -1),
-    LOW((byte) 0),
-    NORMAL((byte) 1),
-    HIGH((byte) 2),
-    HIGHEST((byte) 3);
+    EARLIEST((byte) -1),
+    EARLY((byte) 0),
+    DEFAULT((byte) 1),
+    LATE((byte) 2),
+    LATEST((byte) 3);
 
     private final byte value;
 }
