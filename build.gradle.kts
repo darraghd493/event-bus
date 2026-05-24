@@ -22,6 +22,12 @@ val annotationImplementation: Configuration by configurations.creating {
 
 dependencies {
     annotationImplementation("org.projectlombok:lombok:1.18.34")
+
+    compileOnly("org.slf4j:slf4j-api:2.0.18")
+    compileOnly("it.unimi.dsi:fastutil:8.5.18")
+
+    testImplementation("org.slf4j:slf4j-simple:2.0.18")
+    testImplementation("it.unimi.dsi:fastutil:8.5.18")
 }
 
 // Tasks:

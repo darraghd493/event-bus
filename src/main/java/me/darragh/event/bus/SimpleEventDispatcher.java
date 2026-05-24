@@ -1,7 +1,9 @@
 package me.darragh.event.bus;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import me.darragh.event.Event;
+import me.darragh.event.helper.DispatcherHelper;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -19,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author darraghd493
  * @since 1.0.0
  */
+@Slf4j
 public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T> {
     private final Map<Type, EventListener<T>[]> listeners = new ConcurrentHashMap<>();
     private final Map<Type, Boolean> sortedListeners = new ConcurrentHashMap<>();
@@ -85,9 +88,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             try {
                 listener.invoke(event);
             } catch (Exception e) {
-                System.err.printf("Error invoking listener: %s%n", e); // TODO: Logging
-                //noinspection CallToPrintStackTrace
-                e.printStackTrace(); // TODO: Remove
+                log.error("Error invoking listener: {}", listener, e);
             }
         }
     }
@@ -110,7 +111,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             return;
         }
 
-        this.validateModifiers(method.getName(), method.getModifiers(), false);
+        DispatcherHelper.validateModifiers(method.getName(), method.getModifiers(), false);
 
         MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
         this.addListenerToArray(listener);
@@ -155,7 +156,7 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
             return;
         }
 
-        this.validateModifiers(field.getName(), field.getModifiers(), true);
+        DispatcherHelper.validateModifiers(field.getName(), field.getModifiers(), true);
 
         try {
             EventListener<T> listener = (EventListener<T>) field.get(instance);
@@ -169,29 +170,6 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
         }
     }
 
-    /**
-     * Validates the modifiers of a member.
-     *
-     * @param name The name of the member.
-     * @param modifiers The modifiers of the member.
-     * @param field Whether the member is a field.
-     * @throws RuntimeException If the method is not public or is static.
-     *
-     * @since 1.0.0
-     */
-    protected void validateModifiers(String name, int modifiers, boolean field)  {
-        if (!Modifier.isPublic(modifiers)) {
-            throw new RuntimeException("Member %s is not public: %x".formatted(name, modifiers));
-        }
-
-        if (Modifier.isStatic(modifiers)) {
-            throw new RuntimeException("Member %s is static: %x".formatted(name, modifiers));
-        }
-
-        if (!Modifier.isFinal(modifiers) && field) {
-            throw new RuntimeException("Member %s is not final: %x".formatted(name, modifiers));
-        }
-    }
 
     /**
      * Sorts the listeners for a given event type.
