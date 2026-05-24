@@ -5,6 +5,9 @@ import me.darragh.event.bus.Listener;
 import me.darragh.event.bus.SimpleEventDispatcher;
 import me.darragh.event.bus.experimental.ExperimentalEventDispatcher;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class EventDispatcherDemo {
     public static void main(String[] args) {
         new EventDispatcherDemo().run();
@@ -12,17 +15,17 @@ public class EventDispatcherDemo {
 
     public void run() {
         int listenerCount = 100,
-                invocationCount = 100000;
+                invocationCount = 1000000;
 
-        runTest("SimpleEventDispatcher", new SimpleEventDispatcher<>(), listenerCount, invocationCount);
-        runTest("ExperimentalEventDispatcher", new ExperimentalEventDispatcher<>(), listenerCount, invocationCount);
+        runTest("SimpleEventDispatcher", new SimpleEventDispatcher<>(), listenerCount, invocationCount, 1); // ts js slow :sob:
+        runTest("ExperimentalEventDispatcher", new ExperimentalEventDispatcher<>(), listenerCount, invocationCount, 3);
     }
 
-    private void runTest(String name, EventDispatcher<Event> dispatcher, int listenerCount, int invocationCount) {
-        System.out.println("\n" + name + " Performance:");
+    private void runTest(String name, EventDispatcher<Event> dispatcher, int listenerCount, int invocationCount, int invocationIterations) {
+        System.out.println("\n=== " + name + " ===");
         TestEvent event = new TestEvent("Hello World");
 
-        // Measure registration speeds
+        // registration
         long startRegistrationTime = System.nanoTime();
         for (int i = 0; i < listenerCount; i++) {
             dispatcher.registerObject(new TestListener());
@@ -30,19 +33,44 @@ public class EventDispatcherDemo {
         long registrationDuration = System.nanoTime() - startRegistrationTime;
         double registrationRate = listenerCount / (registrationDuration / 1_000_000_000.0);
 
-        System.out.printf("  Registration (%,d listeners): %,d ns (%,.2f ops/sec)%n",
-                listenerCount, registrationDuration, registrationRate);
+        System.out.printf("Registration (%,d listeners):%n", listenerCount);
+        System.out.printf("\tTime: %,d ns%n", registrationDuration);
+        System.out.printf("\tRate: %,.2f ops/sec%n%n", registrationRate);
 
-        // Measure invocation speeds
-        long startInvocationTime = System.nanoTime();
-        for (int i = 0; i < invocationCount; i++) {
-            dispatcher.invoke(event);
+        // invocation
+        System.out.printf("Invocation (%,d iterations of %,d events):%n", invocationIterations, invocationCount);
+        List<Double> rates = new ArrayList<>();
+
+        for (int iteration = 0; iteration < invocationIterations; iteration++) {
+            long startInvocationTime = System.nanoTime();
+            for (int i = 0; i < invocationCount; i++) {
+                dispatcher.invoke(event);
+            }
+            long invocationDuration = System.nanoTime() - startInvocationTime;
+            double invocationRate = invocationCount / (invocationDuration / 1_000_000_000.0);
+            rates.add(invocationRate);
+
+            System.out.printf("\tIter. %02d: %,16.2f ops/sec (%,d ns)%n", iteration + 1, invocationRate, invocationDuration);
         }
-        long invocationDuration = System.nanoTime() - startInvocationTime;
-        double invocationRate = invocationCount / (invocationDuration / 1_000_000_000.0);
 
-        System.out.printf("  Invocation   (%,d times):     %,d ns (%,.2f ops/sec)%n",
-                invocationCount, invocationDuration, invocationRate);
+        // stats
+        double sum = 0.0;
+        for (double rate : rates) {
+            sum += rate;
+        }
+        double mean = sum / rates.size();
+
+        double std = 0.0;
+        for (double rate : rates) {
+            std += Math.pow(rate - mean, 2);
+        }
+        std = Math.sqrt(std / rates.size());
+
+        // summary
+        System.out.println("\n========================================");
+        System.out.printf("  Mean Rate:\t\t%,.2f ops/sec%n", mean);
+        System.out.printf("  Std. Deviation:\t%,.2f ops/sec%n", std);
+        System.out.println("========================================");
     }
 
     @RequiredArgsConstructor
