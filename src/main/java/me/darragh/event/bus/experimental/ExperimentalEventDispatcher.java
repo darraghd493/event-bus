@@ -22,7 +22,7 @@ import java.util.function.BiConsumer;
 /**
  * @apiNote This is an experimental implementation of an event dispatcher that may encounter issues in certain edge cases.
  *          It is not recommended for general use and may be removed in future versions.
- *          <p/>
+ *          <p>
  *          You must also have <b>fastutils</b> as a dependency in order to use this.
  *          Since this is not intended for production, it is not included by default.
  * @author darraghd493

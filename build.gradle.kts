@@ -35,6 +35,13 @@ tasks.compileJava {
     options.encoding = "UTF-8"
 }
 
+tasks.javadoc {
+    options {
+        this as StandardJavadocDocletOptions
+        addStringOption("tag", "apiNote:a:API Note:")
+    }
+}
+
 tasks.register<Jar>("sourcesJar") {
     archiveClassifier.set("sources")
     from(sourceSets.main.get().allSource)
