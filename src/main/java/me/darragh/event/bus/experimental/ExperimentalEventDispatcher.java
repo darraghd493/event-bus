@@ -176,23 +176,32 @@ public class ExperimentalEventDispatcher<T extends Event> implements EventDispat
         final Field[] fields;
 
         CachedClassData(Class<?> clazz) {
-            var methodList = Arrays.stream(clazz.getDeclaredMethods())
-                    .filter(m -> m.isAnnotationPresent(Listener.class))
-                    .peek(m -> DispatcherHelper.validateModifiers(m.getName(), m.getModifiers(), false))
-                    .map(CachedMethodData::new)
-                    .toArray(CachedMethodData[]::new);
+            List<CachedMethodData> methodList = new ArrayList<>();
+            List<Field> fieldList = new ArrayList<>();
 
-            var fieldList = Arrays.stream(clazz.getDeclaredFields())
-                    .filter(f -> EventListener.class.isAssignableFrom(f.getType()))
-                    .filter(f -> f.isAnnotationPresent(Listener.class))
-                    .peek(f -> {
-                        DispatcherHelper.validateModifiers(f.getName(), f.getModifiers(), true);
-                        if (!f.canAccess(null)) f.setAccessible(true);
-                    })
-                    .toArray(Field[]::new);
+            Class<?> current = clazz;
 
-            this.methods = methodList;
-            this.fields = fieldList;
+            while (current != null && current != Object.class) {
+                Arrays.stream(current.getDeclaredMethods())
+                        .filter(m -> m.isAnnotationPresent(Listener.class))
+                        .peek(m -> DispatcherHelper.validateModifiers(m.getName(), m.getModifiers(), false))
+                        .map(CachedMethodData::new)
+                        .forEach(methodList::add);
+
+                Arrays.stream(current.getDeclaredFields())
+                        .filter(f -> EventListener.class.isAssignableFrom(f.getType()))
+                        .filter(f -> f.isAnnotationPresent(Listener.class))
+                        .peek(f -> {
+                            DispatcherHelper.validateModifiers(f.getName(), f.getModifiers(), true);
+                            f.setAccessible(true);
+                        })
+                        .forEach(fieldList::add);
+
+                current = current.getSuperclass();
+            }
+
+            this.methods = methodList.toArray(new CachedMethodData[0]);
+            this.fields = fieldList.toArray(new Field[0]);
         }
     }
 

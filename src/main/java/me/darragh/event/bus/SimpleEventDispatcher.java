@@ -28,12 +28,18 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void registerObject(Object instance) {
-        for (var method : instance.getClass().getDeclaredMethods()) {
-            this.registerMethodListener(instance, method);
-        }
+        Class<?> clazz = instance.getClass();
 
-        for (var field : instance.getClass().getDeclaredFields()) {
-            this.registerFieldListener(instance, field);
+        while (clazz != null && clazz != Object.class) {
+            for (var method : clazz.getDeclaredMethods()) {
+                this.registerMethodListener(instance, method);
+            }
+
+            for (var field : clazz.getDeclaredFields()) {
+                this.registerFieldListener(instance, field);
+            }
+
+            clazz = clazz.getSuperclass();
         }
     }
 
@@ -44,28 +50,34 @@ public class SimpleEventDispatcher<T extends Event> implements EventDispatcher<T
 
     @Override
     public void unregisterObject(Object instance) {
-        for (var method : instance.getClass().getDeclaredMethods()) {
-            Listener annotation = method.getAnnotation(Listener.class);
-            if (annotation == null) {
-                continue;
+        Class<?> clazz = instance.getClass();
+
+        while (clazz != null && clazz != Object.class) {
+            for (var method : clazz.getDeclaredMethods()) {
+                Listener annotation = method.getAnnotation(Listener.class);
+                if (annotation == null) {
+                    continue;
+                }
+
+                MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
+                this.removeListener(listener);
             }
 
-            MethodEventListener<T> listener = this.createMethodListener(annotation, instance, method);
-            this.removeListener(listener);
-        }
+            for (var field : clazz.getDeclaredFields()) {
+                if (!EventListener.class.isAssignableFrom(field.getType())) continue;
+                Listener annotation = field.getAnnotation(Listener.class);
+                if (annotation == null) continue;
 
-        for (var field : instance.getClass().getDeclaredFields()) {
-            if (!EventListener.class.isAssignableFrom(field.getType())) continue;
-            Listener annotation = field.getAnnotation(Listener.class);
-            if (annotation == null) continue;
-
-            try {
-                if (!field.canAccess(instance)) field.setAccessible(true);
-                @SuppressWarnings("unchecked") EventListener<? extends T> listener = (EventListener<? extends T>) field.get(instance);
-                if (listener != null) this.removeListener(listener);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+                try {
+                    if (!field.canAccess(instance)) field.setAccessible(true);
+                    @SuppressWarnings("unchecked") EventListener<? extends T> listener = (EventListener<? extends T>) field.get(instance);
+                    if (listener != null) this.removeListener(listener);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
+
+            clazz = clazz.getSuperclass();
         }
     }
 
